@@ -15,8 +15,8 @@ S.Container1 = styled.div`
 
 S.PlayerContainer = styled.div`
     position: absolute;
-    top: ${props => props.position === "bottom" ? "calc(100vh - 250px)" : props.position === "top" ? 0 : 0};
-    left: ${props => props.position === "bottom" || props.position === "top" ? "calc((100vw - 250px)/2)" : 0};
+    top: ${props => props.position === "bottom" ? "calc(100vh - 250px)" : props.position === "top" ? 0 : props.position === "left" || props.position === "right" ? "calc(calc((100vh - 250px)/2))" : 0};
+    left: ${props => props.position === "bottom" || props.position === "top" ? "calc((100vw - 250px)/2)" : props.position === "left" ? 0 : props.position === "right" ? "calc(100vw - 250px)" : 0};
     width: 250px;
     height: 250px;
     display: flex;

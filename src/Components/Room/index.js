@@ -10,7 +10,9 @@ class Room extends Component {
         deck: [],
         pile: [],
         whoseTurn: "",
-        phase: ""
+        royalCount: null,
+        whoseRoyal: null,
+        phase: "",
     }
     componentDidMount() {
         this.props.firebase.findRoom(this.props.match.params.id).get()
@@ -36,6 +38,8 @@ class Room extends Component {
                         master: randomId, 
                         deck: [...this.shuffle(cards)],
                         pile: [],
+                        royalCount: null,
+                        whoseRoyal: null,
                         whoseTurn: "",
                         phase: "idle"
                     })
