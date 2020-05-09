@@ -24,6 +24,10 @@ S.PlayerContainer = styled.div`
     justify-content: center;
     align-items: center;
     background-color: lightblue;
+    border: 5px solid white;
+    &.highlight {
+        border: 5px solid greenyellow;
+    }
 `
 
 S.Container2 = styled.div`
@@ -66,6 +70,7 @@ S.Pile = styled.div`
     position: relative;
     width: 250px;
     height: 250px;
+    z-index: -1;
 `
 
 S.Card = styled.img`

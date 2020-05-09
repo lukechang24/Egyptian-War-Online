@@ -18,7 +18,8 @@ class Room extends Component {
     componentDidMount() {
         this.props.firebase.findRoom(this.props.match.params.id).get()
             .then(snap => {
-                const randomId = this.generateRandomId()
+                const randomId = localStorage.getItem("id") ? localStorage.getItem("id") : this.generateRandomId()
+                localStorage.setItem("id", randomId)
                 if(snap.exists) {
                     this.props.firebase.findRoom(this.props.match.params.id).get()
                         .then(snap => {

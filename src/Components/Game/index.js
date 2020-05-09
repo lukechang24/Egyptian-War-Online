@@ -8,10 +8,11 @@ class Game extends Component {
     componentDidMount() {
         const playerId = localStorage.getItem("id")
         document.addEventListener("keydown", (e) => {
-            if(this.props.phase === "idle" && e.which === 38 && playerId === this.props.whoseTurn) {
+            if(this.props.phase !== "waiting" && e.which === 38 && playerId === this.props.whoseTurn) {
                 this.prepareCard()
-            } else if(this.props.phase === "idle" && e.which === 32) {
-                let slapSound = new Audio("audio/slap.mp3");
+            } else if((this.props.phase !== "slapping" || this.props.whoseSlapping.indexOf(playerId) < 0) && e.which === 32 && this.props.pile.length > 0) {
+                let slapSound = new Audio("audio/slap.mp3")
+                slapSound.volume = 0.1
                 slapSound.play();
                 this.prepareSlap()
             }
@@ -97,16 +98,19 @@ class Game extends Component {
         const playerId = localStorage.getItem("id")
         this.props.firebase.findRoom(this.props.match.params.id).get()
             .then(snap => {
-                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping:  [playerId]})
+                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping:  [...snap.data().whoseSlapping, playerId]})
                 setTimeout(() => {
                     this.slap()
-                },100)
+                },3000)
             })
     }
     slap = () => {
         const playerId = localStorage.getItem("id")
         let pile = [...this.props.pile]
         if(pile.length <= 1 || (pile[pile.length-1].rank !== pile[pile.length-2].rank && pile.length === 2)) {
+            if(pile.length === 0) {
+                return
+            }
             this.burn()
             return
         }
@@ -119,7 +123,7 @@ class Game extends Component {
                     let royalCount = null
                     let phase = "idle"
                     for(let i = 0; i < updatedPlayers.length; i++) {
-                        if(updatedPlayers[i].id === playerId) {
+                        if(updatedPlayers[i].id === playerId && snap.data().whoseSlapping[0] === playerId) {
                             const updatedHand = updatedPlayers[i].hand.reverse().concat(pile)
                             updatedPlayers[i].hand = updatedHand.reverse()
                         }
@@ -127,13 +131,8 @@ class Game extends Component {
                     this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: [], royalCount, whoseRoyal, whoseTurn: playerId, phase, whoseSlapping: []})
                 })
         } else {
-            if(this.unsubscribe) {
-                clearTimeout(this.unsubscribe)
-            }
+            console.log("you had to burn for some reason")
             this.burn()
-            if(this.unsubscribe) {
-                this.createDelay()
-            }
         }
     }
     burn = () => {
@@ -200,7 +199,7 @@ class Game extends Component {
                 )
             })
             return(
-                <S.PlayerContainer key={i} position={i === 0 ? "bottom" : i === 1 && arr.length === 2 ? "top" : i === 1 && arr.length === 3 || i === 1 && arr.length === 4 ? "left" : i === 2 && arr.length === 3 ? "right" : i === 2 && arr.length === 4 ? "top" : "right"}>
+                <S.PlayerContainer key={i} className={this.props.whoseTurn === player.id ? "highlight" : ""} position={i === 0 ? "bottom" : i === 1 && arr.length === 2 ? "top" : i === 1 && arr.length === 3 || i === 1 && arr.length === 4 ? "left" : i === 2 && arr.length === 3 ? "right" : i === 2 && arr.length === 4 ? "top" : "right"}>
                     <S.Container2 position={i === 0 ? "bottom" : i === 1 && arr.length === 2 ? "top" : i === 1 && arr.length === 3 || i === 1 && arr.length === 4 ? "left" : i === 2 && arr.length === 3 ? "right" : i === 2 && arr.length === 4 ? "top" : "right"}>
                         <S.CardContainer>
                             {cardBacks}
@@ -220,6 +219,7 @@ class Game extends Component {
         })
         return(
             <S.Container1>
+                {console.log(process.env.REACT_APP_API_KEY)}
                 <S.StartButton disabled={this.props.phase === "idle" || this.props.phase === "playing" ? true : false} onClick={() => this.startGame()}>Start</S.StartButton>
                 {players}
                 <S.Pile>
