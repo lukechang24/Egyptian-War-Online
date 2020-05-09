@@ -20,9 +20,28 @@ S.PlayerContainer = styled.div`
     width: 250px;
     height: 250px;
     display: flex;
-    flex-direction: column;
+    flex-direction: ${props => props.position === "bottom" ? "column-reverse" : "column"};
+    justify-content: center;
+    align-items: center;
+    background-color: lightblue;
+`
+
+S.Container2 = styled.div`
+    width: ${props => props.position === "left" || props.position === "right" ? "auto" : "100%"};
+    height: ${props => props.position === "left" || props.position === "right" ? "100%" : "auto"};
+    display: flex;
     justify-content: space-between;
     align-items: center;
+    transform: ${props => props.position === "top" ? "rotate(180deg)" : props.position === "left" ? "rotate(90deg)" : props.position === "right" ? "rotate(270deg)" : 0};
+`
+
+S.Hand = styled.img`
+    width: 100px;
+    z-index: 100;
+    transition: 0.1s linear;
+    &.move {
+        transform: translate(-50px, calc(-100vh/2 + 102.5px));
+    }
 `
 
 S.CardContainer = styled.div`
@@ -33,9 +52,15 @@ S.CardContainer = styled.div`
 `
 
 S.CardBack = styled.img`
+    /* position: absolute; */
+    /* bottom: 100%;
+    left: 100%; */
+    /* top: -${props => props.layer ? props.layer * 2 : 0}px; */
     width: 102.5px;
-    position: absolute;
-    top: -${props => props.layer ? props.layer * 2 : 0}px;
+    transition: 0.2s linear;
+    &.move {
+        transform: translate(75px, calc(-100vh/2 + 102.5px));
+    }
 `
 S.Pile = styled.div`
     position: relative;
@@ -66,14 +91,6 @@ S.StartButton = styled.button`
     left: 0;
     width: 100px;
     height: 50px;
-`
-
-S.DeleteThisOne = styled.button`
-    position: absolute;
-    bottom: 50px;
-    left: 0;
-    width: 100px;
-    height: 50px
 `
 
 export default S

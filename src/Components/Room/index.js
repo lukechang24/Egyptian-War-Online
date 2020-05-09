@@ -13,6 +13,7 @@ class Room extends Component {
         royalCount: null,
         whoseRoyal: null,
         phase: "",
+        whoseSlapping: []
     }
     componentDidMount() {
         this.props.firebase.findRoom(this.props.match.params.id).get()
@@ -41,17 +42,19 @@ class Room extends Component {
                         royalCount: null,
                         whoseRoyal: null,
                         whoseTurn: "",
-                        phase: "idle"
+                        phase: "waiting",
+                        whoseSlapping: []
                     })
                 }
                 this.props.firebase.findRoom(this.props.match.params.id)
                     .onSnapshot(snapshot => {
                         this.setState({
-                            players: [...snapshot.data().players],
-                            deck: [...snapshot.data().deck],
-                            pile: [...snapshot.data().pile],
+                            players: snapshot.data().players,
+                            deck: snapshot.data().deck,
+                            pile: snapshot.data().pile,
                             whoseTurn: snapshot.data().whoseTurn,
-                            phase: snapshot.data().phase
+                            phase: snapshot.data().phase,
+                            whoseSlapping: snapshot.data().whoseSlapping
                         })
                     })
             })
@@ -79,7 +82,7 @@ class Room extends Component {
     }
     render() {
         return(
-            <Game players={this.state.players} deck={this.state.deck} pile={this.state.pile} whoseTurn={this.state.whoseTurn} phase={this.state.phase} checkIfExists={this.checkIfExists}/>
+            <Game players={this.state.players} deck={this.state.deck} pile={this.state.pile} whoseTurn={this.state.whoseTurn} phase={this.state.phase} whoseSlapping={this.state.whoseSlapping} checkIfExists={this.checkIfExists}/>
         )
     }
 }
