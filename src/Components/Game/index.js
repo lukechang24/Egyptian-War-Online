@@ -8,9 +8,9 @@ class Game extends Component {
     componentDidMount() {
         const playerId = localStorage.getItem("id")
         document.addEventListener("keydown", (e) => {
-            if(this.props.phase !== "waiting" && e.which === 38 && playerId === this.props.whoseTurn) {
+            if(this.props.phase === "idle" && e.which === 38 && playerId === this.props.whoseTurn) {
                 this.prepareCard()
-            } else if((this.props.phase !== "slapping" || this.props.whoseSlapping.indexOf(playerId) < 0) && e.which === 32 && this.props.pile.length > 0) {
+            } else if(this.props.phase !== "slapping" && e.which === 32 && this.props.pile.length > 0) {
                 let slapSound = new Audio("audio/slap.mp3")
                 slapSound.volume = 0.1
                 slapSound.play();
@@ -53,7 +53,6 @@ class Game extends Component {
                     let updatedTurn = null
                     let royalCount = null
                     let whoseRoyal = null
-                    let phase = "idle"
                     for(let i = 0; i < updatedPlayers.length; i++) {
                         if(updatedPlayers[i].id === playerId) {
                             let updatedHand = updatedPlayers[i].hand
@@ -73,7 +72,7 @@ class Game extends Component {
                         royalCount = snap.data().royalCount - 1
                         updatedTurn = localStorage.getItem("id")
                     } else if(snap.data().royalCount === 1 && !royalCount) {
-                        console.log("i went 2nd")
+                        this.props.firebase.findRoom(snap.id).update({whoseTurn: updatedTurn, phase: "finished"})
                         this.unsubscribe = setTimeout(() => {
                             for(let i = 0; i < updatedPlayers.length; i++) {
                                 if(updatedPlayers[i].id === snap.data().whoseRoyal) {
@@ -82,13 +81,13 @@ class Game extends Component {
                                     updatedPile = []
                                     whoseRoyal = null
                                     royalCount = null
-                                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, whoseTurn: updatedTurn, phase})
-                                    return
+                                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, phase: "idle"})
                                 }
                             }
-                        }, 1000)
+                        }, 3000)
+                        return
                     }
-                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, whoseTurn: updatedTurn, phase})
+                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, whoseTurn: updatedTurn, phase: "idle"})
                 // } else {
                 //     console.log("not your turn")
                 // }
@@ -98,10 +97,10 @@ class Game extends Component {
         const playerId = localStorage.getItem("id")
         this.props.firebase.findRoom(this.props.match.params.id).get()
             .then(snap => {
-                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping:  [...snap.data().whoseSlapping, playerId]})
+                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping: playerId})
                 setTimeout(() => {
                     this.slap()
-                },3000)
+                }, 1500)
             })
     }
     slap = () => {
@@ -123,12 +122,12 @@ class Game extends Component {
                     let royalCount = null
                     let phase = "idle"
                     for(let i = 0; i < updatedPlayers.length; i++) {
-                        if(updatedPlayers[i].id === playerId && snap.data().whoseSlapping[0] === playerId) {
+                        if(updatedPlayers[i].id === playerId && snap.data().whoseSlapping === playerId) {
                             const updatedHand = updatedPlayers[i].hand.reverse().concat(pile)
                             updatedPlayers[i].hand = updatedHand.reverse()
                         }
                     }
-                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: [], royalCount, whoseRoyal, whoseTurn: playerId, phase, whoseSlapping: []})
+                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: [], royalCount, whoseRoyal, whoseTurn: playerId, phase, whoseSlapping: null})
                 })
         } else {
             console.log("you had to burn for some reason")
@@ -153,7 +152,7 @@ class Game extends Component {
                         updatedPlayers[i].hand = updatedHand
                     }
                 }
-                this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, phase, whoseSlapping: []})
+                this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, phase, whoseSlapping: null})
             })
     }
     createDelay = () => {
@@ -204,8 +203,7 @@ class Game extends Component {
                         <S.CardContainer>
                             {cardBacks}
                         </S.CardContainer>
-                        <S.Hand src="images/hand.png" className={this.props.phase === "slapping" && this.props.whoseSlapping.indexOf(player.id) >= 0 ? "move" : ""}></S.Hand>
-                        {console.log(this.props.whoseSlapping)}
+                        <S.Hand src="images/hand.png" className={this.props.phase === "slapping" && this.props.whoseSlapping === player.id ? "move" : ""}></S.Hand>
                     </S.Container2>
                     <S.Name>{player.name}</S.Name>
                     <h1>{player.hand.length}</h1>

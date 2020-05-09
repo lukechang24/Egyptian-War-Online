@@ -13,7 +13,7 @@ class Room extends Component {
         royalCount: null,
         whoseRoyal: null,
         phase: "",
-        whoseSlapping: []
+        whoseSlapping: null
     }
     componentDidMount() {
         this.props.firebase.findRoom(this.props.match.params.id).get()
@@ -44,7 +44,7 @@ class Room extends Component {
                         whoseRoyal: null,
                         whoseTurn: "",
                         phase: "waiting",
-                        whoseSlapping: []
+                        whoseSlapping: null
                     })
                 }
                 this.props.firebase.findRoom(this.props.match.params.id)
