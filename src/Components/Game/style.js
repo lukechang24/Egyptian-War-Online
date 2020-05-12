@@ -4,19 +4,20 @@ const S = {}
 
 S.Container1 = styled.div`
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 750px;
+    height: 750px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     overflow-x: hidden;
+    overflow-y: hidden;
 `
 
 S.PlayerContainer = styled.div`
     position: absolute;
-    top: ${props => props.position === "bottom" ? "calc(100vh - 250px)" : props.position === "top" ? 0 : props.position === "left" || props.position === "right" ? "calc(calc((100vh - 250px)/2))" : 0};
-    left: ${props => props.position === "bottom" || props.position === "top" ? "calc((100vw - 250px)/2)" : props.position === "left" ? 0 : props.position === "right" ? "calc(100vw - 250px)" : 0};
+    top: ${props => props.position === "bottom" ? "calc(750px - 250px)" : props.position === "top" ? 0 : props.position === "left" || props.position === "right" ? "calc(calc((750px - 250px)/2))" : 0};
+    left: ${props => props.position === "bottom" || props.position === "top" ? "calc((750px - 250px)/2)" : props.position === "left" ? 0 : props.position === "right" ? "calc(750px - 250px)" : 0};
     width: 250px;
     height: 250px;
     display: flex;
@@ -42,7 +43,7 @@ S.Container2 = styled.div`
 S.Hand = styled.img`
     width: 100px;
     z-index: 100;
-    transition: 0.1s linear;
+    transition: ${props => props.speed === "slower" ? "5s linear" : "0.1s linear" };
     &.move {
         transform: translate(-50px, calc(-100vh/2 + 102.5px));
     }
@@ -68,9 +69,12 @@ S.CardBack = styled.img`
 `
 S.Pile = styled.div`
     position: relative;
-    width: 250px;
-    height: 250px;
+    width: 200px;
+    height: 200px;
     z-index: -1;
+    background-color: red;
+    border: 5px solid black;
+    border-radius: 100px;
 `
 
 S.Card = styled.img`
@@ -90,10 +94,14 @@ S.Name = styled.h1`
 
 `
 
-S.StartButton = styled.button`
+S.ButtonContainer = styled.div`
     position: absolute;
     bottom: 0;
     left: 0;
+    display: flex;
+`
+
+S.Button = styled.button`
     width: 100px;
     height: 50px;
 `

@@ -10,10 +10,10 @@ class Game extends Component {
         document.addEventListener("keydown", (e) => {
             if(this.props.phase === "idle" && e.which === 38 && playerId === this.props.whoseTurn) {
                 this.prepareCard()
-            } else if(this.props.phase !== "slapping" && e.which === 32 && this.props.pile.length > 0) {
-                let slapSound = new Audio("audio/slap.mp3")
-                slapSound.volume = 0.1
-                slapSound.play();
+            } else if(e.which === 32 && this.props.pile.length > 0 && this.props.whoseSlapping.indexOf(playerId) < 0) {
+                // const slapSound = new Audio("audio/slap.mp3")
+                // slapSound.play()
+                // slapSound.volume = 0.2
                 this.prepareSlap()
             }
         })
@@ -70,9 +70,9 @@ class Game extends Component {
                     if(snap.data().royalCount > 1 && !royalCount) {
                         console.log("i went first")
                         royalCount = snap.data().royalCount - 1
-                        updatedTurn = localStorage.getItem("id")
+                        updatedTurn = playerId
                     } else if(snap.data().royalCount === 1 && !royalCount) {
-                        this.props.firebase.findRoom(snap.id).update({whoseTurn: updatedTurn, phase: "finished"})
+                        this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, phase: "finished"})
                         this.unsubscribe = setTimeout(() => {
                             for(let i = 0; i < updatedPlayers.length; i++) {
                                 if(updatedPlayers[i].id === snap.data().whoseRoyal) {
@@ -81,7 +81,9 @@ class Game extends Component {
                                     updatedPile = []
                                     whoseRoyal = null
                                     royalCount = null
-                                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, phase: "idle"})
+                                    updatedTurn = updatedPlayers[i].id
+                                    console.log(updatedTurn, "updated")
+                                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, royalCount, whoseRoyal, whoseTurn: updatedTurn, phase: "idle"})
                                 }
                             }
                         }, 3000)
@@ -97,7 +99,7 @@ class Game extends Component {
         const playerId = localStorage.getItem("id")
         this.props.firebase.findRoom(this.props.match.params.id).get()
             .then(snap => {
-                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping: playerId})
+                this.props.firebase.findRoom(snap.id).update({phase: "slapping", whoseSlapping: [...snap.data().whoseSlapping, playerId]})
                 setTimeout(() => {
                     this.slap()
                 }, 1500)
@@ -120,18 +122,21 @@ class Game extends Component {
                     let updatedPlayers = snap.data().players
                     let whoseRoyal = null
                     let royalCount = null
+                    let updatedTurn = snap.data().whoseTurn
                     let phase = "idle"
                     for(let i = 0; i < updatedPlayers.length; i++) {
-                        if(updatedPlayers[i].id === playerId && snap.data().whoseSlapping === playerId) {
+                        if(updatedPlayers[i].id === playerId && this.props.whoseSlapping[0] === updatedPlayers[i].id) {
                             const updatedHand = updatedPlayers[i].hand.reverse().concat(pile)
                             updatedPlayers[i].hand = updatedHand.reverse()
+                            updatedTurn = updatedPlayers[i].id
                         }
                     }
-                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: [], royalCount, whoseRoyal, whoseTurn: playerId, phase, whoseSlapping: null})
+                    this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: [], royalCount, whoseRoyal, whoseTurn: updatedTurn, phase, whoseSlapping: []})
                 })
         } else {
-            console.log("you had to burn for some reason")
-            this.burn()
+            if(playerId === this.props.whoseSlapping[0]) {
+                this.burn()
+            }
         }
     }
     burn = () => {
@@ -152,7 +157,7 @@ class Game extends Component {
                         updatedPlayers[i].hand = updatedHand
                     }
                 }
-                this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, phase, whoseSlapping: null})
+                this.props.firebase.findRoom(snap.id).update({players: updatedPlayers, pile: updatedPile, phase, whoseSlapping: []})
             })
     }
     createDelay = () => {
@@ -189,6 +194,21 @@ class Game extends Component {
         }
         return updatedArr
     }
+    fixGame = () => {
+        this.props.firebase.findRoom(this.props.match.params.id).update({phase: "idle", whoseSlapping: []})
+    }
+    restart = () => {
+        this.props.firebase.findRoom(this.props.match.params.id).update({
+            deck: this.props.shuffle(this.props.deck), 
+            phase: "idle", 
+            pile: [], 
+            royalCount: null, 
+            whoseRoyal: null, 
+            whoseSlapping: []
+        }).then(() => {
+            this.startGame()
+        })
+    }
     render() {
         const playerId = localStorage.getItem("id")
         const players = this.rotateIds(playerId, this.props.players).map((player, i, arr) => {
@@ -203,7 +223,7 @@ class Game extends Component {
                         <S.CardContainer>
                             {cardBacks}
                         </S.CardContainer>
-                        <S.Hand src="images/hand.png" className={this.props.phase === "slapping" && this.props.whoseSlapping === player.id ? "move" : ""}></S.Hand>
+                        <S.Hand src="images/hand.png" className={this.props.phase === "slapping" && this.props.whoseSlapping.indexOf(player.id) >= 0 ? "move" : ""} ></S.Hand>
                     </S.Container2>
                     <S.Name>{player.name}</S.Name>
                     <h1>{player.hand.length}</h1>
@@ -215,14 +235,43 @@ class Game extends Component {
                     <S.Card key={i} skew={card.skew} translateX={card.translateX} translateY={card.translateY} src={card.imgUrl}></S.Card>
             )
         })
+        const audio = this.props.players.map(player => {
+            return(
+                <audio src="audio/slap.mp3" type="audio/mpeg" autoPlay={this.props.phase === "slapping" && this.props.whoseSlapping.indexOf(player.id) >= 0 ? true : false}></audio>
+            )
+        })
         return(
             <S.Container1>
-                {console.log(process.env.REACT_APP_API_KEY)}
-                <S.StartButton disabled={this.props.phase === "idle" || this.props.phase === "playing" ? true : false} onClick={() => this.startGame()}>Start</S.StartButton>
+                <S.ButtonContainer>
+                    {
+                        this.props.phase === "waiting"
+                            ?
+                                <S.Button disabled={this.props.phase === "idle" || this.props.phase === "playing" ? true : false} onClick={() => this.startGame()}>Start</S.Button>
+                            :
+                                <S.Button onClick={() => this.restart()}>Restart</S.Button>
+                    }
+                    {
+                        this.props.phase !== "waiting"
+                            ?
+                                <S.Button onClick={() => this.fixGame()}>Fix Game</S.Button>
+                            :
+                                null
+
+                    } 
+                </S.ButtonContainer>
                 {players}
                 <S.Pile>
                     {pile}
                 </S.Pile>
+                {
+                    this.props.phase === "slapping"
+                        ?
+                            <>
+                                {audio}
+                            </>
+                        :
+                            null
+                }
             </S.Container1>
         )
     }

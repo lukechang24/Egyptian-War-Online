@@ -2,6 +2,7 @@ import React, { Component } from "react"
 import Game from "../Game"
 import { withFirebase } from "../Firebase"
 import { withRouter } from "react-router-dom"
+import S from "./style"
 import cards from "./cards"
 
 class Room extends Component {
@@ -13,7 +14,8 @@ class Room extends Component {
         royalCount: null,
         whoseRoyal: null,
         phase: "",
-        whoseSlapping: null
+        whoseSlapping: [],
+        playSound: false
     }
     componentDidMount() {
         this.props.firebase.findRoom(this.props.match.params.id).get()
@@ -44,19 +46,36 @@ class Room extends Component {
                         whoseRoyal: null,
                         whoseTurn: "",
                         phase: "waiting",
-                        whoseSlapping: null
+                        whoseSlapping: []
                     })
                 }
                 this.props.firebase.findRoom(this.props.match.params.id)
                     .onSnapshot(snapshot => {
-                        this.setState({
-                            players: snapshot.data().players,
-                            deck: snapshot.data().deck,
-                            pile: snapshot.data().pile,
-                            whoseTurn: snapshot.data().whoseTurn,
-                            phase: snapshot.data().phase,
-                            whoseSlapping: snapshot.data().whoseSlapping
-                        })
+                        if(randomId === this.state.whoseTurn) {
+                            setTimeout(() => {
+                                this.setState({
+                                    pile: snapshot.data().pile,
+                                })
+                            }, 350)
+                            this.setState({
+                                players: snapshot.data().players,
+                                deck: snapshot.data().deck,
+                                // pile: snapshot.data().pile,
+                                whoseTurn: snapshot.data().whoseTurn,
+                                phase: snapshot.data().phase,
+                                whoseSlapping: snapshot.data().whoseSlapping
+                            })
+                        } else {
+                            this.setState({
+                                players: snapshot.data().players,
+                                deck: snapshot.data().deck,
+                                pile: snapshot.data().pile,
+                                whoseTurn: snapshot.data().whoseTurn,
+                                phase: snapshot.data().phase,
+                                whoseSlapping: snapshot.data().whoseSlapping
+                            })
+                        }
+                        // console.log(this.state.whoseTurn)
                     })
             })
     }
@@ -83,7 +102,9 @@ class Room extends Component {
     }
     render() {
         return(
-            <Game players={this.state.players} deck={this.state.deck} pile={this.state.pile} whoseTurn={this.state.whoseTurn} phase={this.state.phase} whoseSlapping={this.state.whoseSlapping} checkIfExists={this.checkIfExists}/>
+            <S.Container1>
+                <Game players={this.state.players} deck={this.state.deck} pile={this.state.pile} whoseTurn={this.state.whoseTurn} phase={this.state.phase} whoseSlapping={this.state.whoseSlapping} checkIfExists={this.checkIfExists} playSound={this.state.playSound} shuffle={this.shuffle}/>
+            </S.Container1>
         )
     }
 }
